@@ -15,7 +15,15 @@ typedef struct
 {
 	WINDIVERT_IPHDR ip;
 	WINDIVERT_TCPHDR tcp;
+	//UINT16 get;
 } TCPPACKET, *PTCPPACKET;
+
+void dump(PVOID pPacket[MAXBUF])
+{
+	for (int i = 0; i < MAXBUF; i++)
+		printf("%02x ", pPacket[i]);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -41,15 +49,22 @@ int main(int argc, char *argv[])
 		}
 
 		PTCPPACKET tcp = (TCPPACKET *)pPacket;	
-		
+
 		if (tcp->ip.Protocol == 0x06)	//When the TCP packet
 		{
+			dump(pPacket);
 			if (ntohs(tcp->tcp.SrcPort) == 80 || ntohs(tcp->tcp.DstPort) == 80)		//When the port number is 80, try to drop the packet
 			{
 				printf("   >>> [Drop the packet] <<<<\n");
 				printf("   >> Block DstPort : %d\n", ntohs(tcp->tcp.DstPort));
 				printf("   >> Block SrcPort : %d\n", ntohs(tcp->tcp.SrcPort));
 				printf("\n");
+				
+				//if(pPacket[(tcp->ip.Length - tcp->ip.HdrLength - tcp->tcp.HdrLength)+20] == 0x20);
+				//{
+					//printf("	>> Block This site : test.gilgil.net\n");
+					//continue;
+				//}
 				continue;
 			}
 			continue;
