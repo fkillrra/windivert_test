@@ -1,3 +1,7 @@
+/*
+2018-05-14 f.killrra's first WinDivert_test
+I fixed LABEL (goto) & Determined if the packet is TCP.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <WinSock2.h>
@@ -30,32 +34,32 @@ int main(int argc, char *argv[])
 
 	while (true)
 	{
-		first:
 		if (!WinDivertRecv(handle, pPacket, sizeof(pPacket), &addr, &len))
 		{
 			printf("error : WinDivertRecv()\n");
+			continue;
 		}
 
-		PTCPPACKET tcp = (TCPPACKET *)pPacket;
-
-		if (ntohs(tcp->tcp.SrcPort) == 80 || ntohs(tcp->tcp.DstPort) == 80)
+		PTCPPACKET tcp = (TCPPACKET *)pPacket;	
+		
+		if (tcp->ip.Protocol == 0x06)	//When the TCP packet
 		{
-			printf("   >>> [Drop the packet] <<<<\n");
-			printf("   >> Block DstPort : %d\n", ntohs(tcp->tcp.DstPort));
-			printf("   >> Block SrcPort : %d\n", ntohs(tcp->tcp.SrcPort));
-			printf("\n");
-			goto first;
+			if (ntohs(tcp->tcp.SrcPort) == 80 || ntohs(tcp->tcp.DstPort) == 80)		//When the port number is 80, try to drop the packet
+			{
+				printf("   >>> [Drop the packet] <<<<\n");
+				printf("   >> Block DstPort : %d\n", ntohs(tcp->tcp.DstPort));
+				printf("   >> Block SrcPort : %d\n", ntohs(tcp->tcp.SrcPort));
+				printf("\n");
+				continue;
+			}
+			continue;
 		}
-
-		else goto send;
-
-		send:
+		
 		if (!WinDivertSend(handle, pPacket, len, &addr, &len))
 		{
 			printf("error : WinDviertSend()\n");
-			//continue;
+			continue;
 		}
-		goto first;
 	}
 
 	return 0;
